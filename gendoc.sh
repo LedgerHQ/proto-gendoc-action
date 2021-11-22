@@ -73,19 +73,19 @@ done
 
 echo 'openapi: "3.0.2"
 info:
-  title: __PLACE_HOLDER_API_NAME
-  version: __PLACE_HOLDER_API_VERSION
+  title: _PLACE_HOLDER_API_NAME_
+  version: _PLACE_HOLDER_API_VERSION_
   description: |
-__PLACE_HOLDER_DOCUMENTATION
+_PLACE_HOLDER_DOCUMENTATION_
 paths: {}' > "$GENDOC_OPENAPI_FILE"
 
+pushd "$GENDOC_PROTO_ROOT_DIR" > /dev/null
 # shellcheck disable=SC2046
-protoc --doc_out="$TEMP_DIR" \
-       --doc_opt=markdown,"doc.md" \
-       $(find "$GENDOC_PROTO_ROOT_DIR" -name "*.proto")
+protoc --doc_out="$TEMP_DIR" --doc_opt=markdown,"doc.md" $(find . -name "*.proto")
+popd > /dev/null
 
 sed -i -e "s/^/    /g" "$TEMP_DIR/doc.md"
-sed -i -e "s/__PLACE_HOLDER_API_NAME/$GENDOC_API_NAME/g" "$GENDOC_OPENAPI_FILE"
-sed -i -e "s/__PLACE_HOLDER_API_VERSION/$GENDOC_API_VERSION/g" "$GENDOC_OPENAPI_FILE"
-sed -i -e "/__PLACE_HOLDER_DOCUMENTATION/r $TEMP_DIR/doc.md" \
-       -e "/__PLACE_HOLDER_DOCUMENTATION/d" "$GENDOC_OPENAPI_FILE"
+sed -i -e "s/_PLACE_HOLDER_API_NAME_/$GENDOC_API_NAME/g" "$GENDOC_OPENAPI_FILE"
+sed -i -e "s/_PLACE_HOLDER_API_VERSION_/$GENDOC_API_VERSION/g" "$GENDOC_OPENAPI_FILE"
+sed -i -e "/_PLACE_HOLDER_DOCUMENTATION_/r $TEMP_DIR/doc.md" \
+       -e "/_PLACE_HOLDER_DOCUMENTATION_/d" "$GENDOC_OPENAPI_FILE"
