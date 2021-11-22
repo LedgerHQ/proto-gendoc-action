@@ -10,6 +10,32 @@ trap 'rm -rf -- "$TEMP_DIR"' EXIT
 : "${GENDOC_PROTO_ROOT_DIR:="proto"}"
 : "${GENDOC_OPENAPI_FILE:="openapi.yaml"}"
 
+# shellcheck disable=SC2016
+help_awk_script='
+function strip_lparen(s) {
+    gsub(/)$/, "", s);
+    return s;
+}
+function strip_spaces(s) {
+    gsub(/\s*$/, "", s);
+    gsub(/^\s*/, "", s);
+    return s;
+}
+BEGIN {
+    FS = "##";
+}
+{
+    $1 = strip_spaces($1);
+    $1 = strip_lparen($1);
+    $2 = strip_spaces($2);
+    if (NF > 2) {
+        $3 = strip_spaces($3);
+        $1=$1 " " $2;
+        $2=$3;
+    }
+    printf "   \033[36m%-30s\033[0m %s\n", $1, $2
+}'
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --api-name)          ## NAME ## API name
@@ -32,9 +58,15 @@ while [[ $# -gt 0 ]]; do
             shift
             shift
             ;;
-        *)
-            POSITIONAL+=("$1")
-            shift
+        --help|*)            ## Display this help
+            echo "gendoc -- Generate OpenAPI documentation from Proto files"
+            echo ""
+            echo "USAGE:"
+            echo "   $(basename "$0") [OPTIONS]"
+            echo ""
+            echo "OPTIONS:"
+            grep -E '^\s*--\S+?)\s*?##' "$0" | xargs -L1 | awk "$help_awk_script"
+            exit 1
             ;;
     esac
 done
