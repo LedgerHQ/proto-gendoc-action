@@ -1,17 +1,18 @@
 #!/bin/bash
 
-set -Eeuo pipefail
+set -Eeo pipefail
 
-TEMP_DIR="$(mktemp -d)"
-trap 'rm -rf -- "$TEMP_DIR"' EXIT
+temp_dir="$(mktemp -d)"
+trap 'rm -rf -- "$temp_dir"' EXIT
 
 : "${GENDOC_API_NAME:="API Name"}"
 : "${GENDOC_API_VERSION:="1.0.0"}"
-: "${GENDOC_PROTO_ROOT_DIR:="proto/"}"
+: "${GENDOC_PROTO_ROOT_DIR:="."}"
+: "${GENDOC_PROTO_INCLUDE_DIR:="."}"
 : "${GENDOC_OPENAPI_FILE:="openapi.yaml"}"
 
 # shellcheck disable=SC2016
-help_awk_script='
+help_script='
 function strip_option(s, p) {
     gsub(/(\|\*)?\)$/, "", s);
     return s;
@@ -36,6 +37,7 @@ BEGIN {
     printf "   \033[36m%-22s\033[0m %s\n", $1, $2
 }'
 
+positional=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --api-name)          ## NAME ## API name
@@ -53,24 +55,35 @@ while [[ $# -gt 0 ]]; do
             shift
             shift
             ;;
+        --proto-include-dir) ## DIR ## Protobuf include directory
+            GENDOC_PROTO_INCLUDE_DIR="$2"
+            shift
+            shift
+            ;;
         --openapi-file)      ## FILE ## OpenAPI output file
             GENDOC_OPENAPI_FILE="$2"
             shift
             shift
             ;;
-        --help|*)            ## Display this help
+        --help)              ## Display this help
             echo "gendoc -- Generate OpenAPI documentation from Proto files"
             echo ""
             echo "USAGE:"
             echo "   $(basename "$0") [OPTIONS]"
             echo ""
             echo "OPTIONS:"
-            grep -E '^\s*--\S+?\)\s*?##' "$0" | xargs -L1 | awk "$help_awk_script"
+            grep -E '^\s*--\S+?\)\s*?##' "$0" | xargs -L1 | awk "$help_script"
             exit 1
+            ;;
+        *)                   ## Extra arguments for 'protoc'
+            positional+=("$1")
+            shift
             ;;
     esac
 done
+set -- "${positional[@]}" # Restore positional parameters
 
+# OpenAPI template
 echo 'openapi: "3.0.2"
 info:
   title: _PLACE_HOLDER_API_NAME_
@@ -79,13 +92,20 @@ info:
 _PLACE_HOLDER_DOCUMENTATION_
 paths: {}' > "$GENDOC_OPENAPI_FILE"
 
-pushd "$GENDOC_PROTO_ROOT_DIR" > /dev/null
-# shellcheck disable=SC2046
-protoc --doc_out="$TEMP_DIR" --doc_opt=markdown,"doc.md" $(find . -name "*.proto")
-popd > /dev/null
+# Split list of include directories
+IFS=',' read -ra include_dirs <<< "$GENDOC_PROTO_INCLUDE_DIR"
+include_dirs+=("$GENDOC_PROTO_ROOT_DIR")
 
-sed -i -e "s/^/    /g" "$TEMP_DIR/doc.md"
+# Generate Markdown documentation
+protoc --doc_out="$temp_dir" \
+       --doc_opt=markdown,"doc.md" \
+       "${include_dirs[@]/#/-I}" \
+       "$(find "$GENDOC_PROTO_ROOT_DIR" -name "*.proto")" \
+       "$@"
+
+# Create OpenAPI file from template and replace place holders
+sed -i -e "s/^/    /g" "$temp_dir/doc.md"
 sed -i -e "s/_PLACE_HOLDER_API_NAME_/$GENDOC_API_NAME/g" "$GENDOC_OPENAPI_FILE"
 sed -i -e "s/_PLACE_HOLDER_API_VERSION_/$GENDOC_API_VERSION/g" "$GENDOC_OPENAPI_FILE"
-sed -i -e "/_PLACE_HOLDER_DOCUMENTATION_/r $TEMP_DIR/doc.md" \
+sed -i -e "/_PLACE_HOLDER_DOCUMENTATION_/r $temp_dir/doc.md" \
        -e "/_PLACE_HOLDER_DOCUMENTATION_/d" "$GENDOC_OPENAPI_FILE"

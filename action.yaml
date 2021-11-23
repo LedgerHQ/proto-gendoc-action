@@ -1,4 +1,4 @@
-name: Generate doc (proto)
+name: Generate Protobuf Documentation
 description: Generate Protobuf documentation in the OpenAPI format
 inputs:
   api-name:
@@ -10,6 +10,9 @@ inputs:
   proto-root-dir:
     description: Root of Protobuf files
     required: true
+  proto-include-dir:
+    description: Include directory
+    required: false
   openapi-file:
     description: Output OpenAPI file
     required: true
@@ -24,5 +27,7 @@ runs:
     - "${{ inputs.api-version }}"
     - "--proto-root-dir"
     - "${{ inputs.proto-root-dir }}"
+    - "--proto-include-dir"
+    - "${{ inputs.proto-include-dir }}"
     - "--openapi-file"
     - "${{ inputs.openapi-file }}"
