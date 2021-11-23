@@ -1,0 +1,16 @@
+on: [push]
+jobs:
+  generate-doc:
+    runs-on: ubuntu-latest
+    name: Generate documentation
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Generate documentation
+        uses: ./
+        with:
+          api-name: Route Guide API
+          api-version: 1.0.0
+          proto-root-dir: examples/
+      - name: Print documentation
+        run: cat openapi.yaml

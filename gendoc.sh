@@ -7,18 +7,18 @@ trap 'rm -rf -- "$TEMP_DIR"' EXIT
 
 : "${GENDOC_API_NAME:="API Name"}"
 : "${GENDOC_API_VERSION:="1.0.0"}"
-: "${GENDOC_PROTO_ROOT_DIR:="proto"}"
+: "${GENDOC_PROTO_ROOT_DIR:="proto/"}"
 : "${GENDOC_OPENAPI_FILE:="openapi.yaml"}"
 
 # shellcheck disable=SC2016
 help_awk_script='
-function strip_lparen(s) {
-    gsub(/)$/, "", s);
+function strip_option(s, p) {
+    gsub(/(\|\*)?\)$/, "", s);
     return s;
 }
 function strip_spaces(s) {
-    gsub(/\s*$/, "", s);
-    gsub(/^\s*/, "", s);
+    gsub(/[ \t]*$/, "", s);
+    gsub(/^[ \t]*/, "", s);
     return s;
 }
 BEGIN {
@@ -26,14 +26,14 @@ BEGIN {
 }
 {
     $1 = strip_spaces($1);
-    $1 = strip_lparen($1);
+    $1 = strip_option($1);
     $2 = strip_spaces($2);
     if (NF > 2) {
         $3 = strip_spaces($3);
         $1=$1 " " $2;
         $2=$3;
     }
-    printf "   \033[36m%-30s\033[0m %s\n", $1, $2
+    printf "   \033[36m%-22s\033[0m %s\n", $1, $2
 }'
 
 while [[ $# -gt 0 ]]; do
@@ -65,7 +65,7 @@ while [[ $# -gt 0 ]]; do
             echo "   $(basename "$0") [OPTIONS]"
             echo ""
             echo "OPTIONS:"
-            grep -E '^\s*--\S+?)\s*?##' "$0" | xargs -L1 | awk "$help_awk_script"
+            grep -E '^\s*--\S+?\)\s*?##' "$0" | xargs -L1 | awk "$help_awk_script"
             exit 1
             ;;
     esac

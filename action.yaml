@@ -1,0 +1,28 @@
+name: Generate doc (proto)
+description: Generate Protobuf documentation in the OpenAPI format
+inputs:
+  api-name:
+    description: API name
+    required: true
+  api-version:
+    description: API version
+    required: true
+  proto-root-dir:
+    description: Root of Protobuf files
+    required: true
+  openapi-file:
+    description: Output OpenAPI file
+    required: true
+    default: openapi.yaml
+runs:
+  using: "docker"
+  image: "Dockerfile"
+  args:
+    - "--api-name"
+    - "${{ inputs.api-name }}"
+    - "--api-version"
+    - "${{ inputs.api-version }}"
+    - "--proto-root-dir"
+    - "${{ inputs.proto-root-dir }}"
+    - "--openapi-file"
+    - "${{ inputs.openapi-file }}"
