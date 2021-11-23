@@ -10,13 +10,13 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: googleapis/googleapis
-          path: _deps/proto/googleapis
+          path: _deps/googleapis
       - name: Generate documentation
         uses: ./
         with:
           api-name: Route Guide API
           api-version: 1.0.0
           proto-root-dir: examples/
-          proto-include-dir: _deps/proto/googleapis
+          proto-include-dir: _deps/googleapis
       - name: Print documentation
         run: cat openapi.yaml
