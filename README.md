@@ -45,6 +45,10 @@ And set the `proto-include-dir` variable:
     proto-include-dir: _deps/googleapis
 ```
 
+### Example
+
+Check the [example repo](https://github.com/LedgerHQ/proto-gendoc-example).
+
 ## Docker usage
 
 This tool can also be used locally using Docker.
